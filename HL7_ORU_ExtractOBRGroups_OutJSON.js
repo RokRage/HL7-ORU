@@ -29,6 +29,8 @@ for (var i = 0; i < lines.length; i++) {
         result.orc2 = field(parts, 2); // ORC-2 Placer Order Number (per feed assumption)
         result.orc3 = field(parts, 3); // ORC-3 Filler Order Number
     } else if (seg === 'OBR') {
+        var obr2Parts = field(parts, 2).split('^');
+        var obr3Parts = field(parts, 3).split('^');
         currentObr = {
             obr2_1: obr2Parts[0] || '', // OBR-2.1 Placer Order Number (entity id)
             obr3_1: obr3Parts[0] || '', // OBR-3.1 Filler Order Number (entity id)
