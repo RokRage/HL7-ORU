@@ -4,54 +4,49 @@
  * of writing to a database.
  */
 
-/**
- * Safely returns a field value as a string, falling back to '' when missing.
- */
-function asString(field) {
-    return (field && field.toString) ? field.toString() : '';
+// Helper: safe field accessor on a pipe-split segment (0-based index).
+function field(parts, idx) {
+    return (parts && parts.length > idx) ? String(parts[idx]) : '';
 }
 
-// Aggregate output as JSON: single ORC with child OBRs and their OBXs.
-// Use descendant lookup for OBR; take its parent’s OBX nodes to keep grouping intact.
-var obrs = msg..OBR;
-if (obrs == null || obrs.length() === 0) {
-    obrs = new XMLList(); // keeps length() calls safe when no OBR exists
-}
-// There is always one ORC; prefer the top-level ORC, fallback to the ORC in the first OBR's parent group.
-var orcSegment = (msg.ORC && msg.ORC.length() > 0) ? msg.ORC[0] : (obrs.length() > 0 && obrs[0].parent() && obrs[0].parent().ORC ? obrs[0].parent().ORC[0] : null);
+// Work from the raw HL7 so grouping matches wire order.
+var raw = connectorMessage.getRawData ? String(connectorMessage.getRawData()) :
+          (connectorMessage.getEncodedData ? String(connectorMessage.getEncodedData()) : String(msg));
+var lines = raw.split(/\r\n|\n|\r/);
 
-var result = {
-    orc2: asString(orcSegment ? orcSegment['ORC.2']['EI.1'] : ''),
-    orc3: asString(orcSegment ? orcSegment['ORC.3']['EI.1'] : ''),
-    obrs: []
-};
+var result = { orc2: '', orc3: '', obrs: [] };
+var currentObr = null;
 
-for (var i = 0; i < obrs.length(); i++) {
-    var obr = obrs[i];
-    // Get OBX nodes that share the same parent as this OBR (usual HL7 grouping).
-    var parent = obr.parent();
-    var obxes = (parent && parent.OBX) ? parent.OBX : new XMLList();
+for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (!line || line.trim() === '') {
+        continue;
+    }
+    var parts = line.split('|');
+    var seg = parts[0];
 
-    var obrEntry = {
-        obr4_code: asString(obr['OBR.4']['CE.1']),
-        obr4_text: asString(obr['OBR.4']['CE.2']),
-        obr7: asString(obr['OBR.7']['TS.1']),
-        obxs: []
-    };
-
-    for (var j = 0; j < obxes.length(); j++) {
-        var obx = obxes[j];
-        obrEntry.obxs.push({
-            obx3_code: asString(obx['OBX.3']['CE.1']),
-            obx3_text: asString(obx['OBX.3']['CE.2']),
-            obx5: asString(obx['OBX.5'][0]),         // first repetition of value
-            obx6: asString(obx['OBX.6']['CE.1']),
-            obx11: asString(obx['OBX.11']),
-            obx14: asString(obx['OBX.14']['TS.1'])
+    if (seg === 'ORC') {
+        result.orc2 = field(parts, 2); // ORC-2 Placer Order Number (per feed assumption)
+        result.orc3 = field(parts, 3); // ORC-3 Filler Order Number
+    } else if (seg === 'OBR') {
+        currentObr = {
+            obr4_code: field(parts, 4).split('^')[0],
+            obr4_text: field(parts, 4).split('^')[1] || '',
+            obr7: field(parts, 6), // Observation Date/Time
+            obxs: []
+        };
+        result.obrs.push(currentObr);
+    } else if (seg === 'OBX' && currentObr) {
+        var obx3 = field(parts, 3).split('^');
+        currentObr.obxs.push({
+            obx3_code: obx3[0] || '',
+            obx3_text: obx3[1] || '',
+            obx5: field(parts, 5),
+            obx6: field(parts, 6),
+            obx11: field(parts, 11),
+            obx14: field(parts, 14)
         });
     }
-
-    result.obrs.push(obrEntry);
 }
 
 logger.info(JSON.stringify(result));
