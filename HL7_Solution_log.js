@@ -30,6 +30,8 @@ for (var i = 0; i < lines.length; i++) {
         result.orc3 = field(parts, 3); // ORC-3 Filler Order Number
     } else if (seg === 'OBR') {
         currentObr = {
+            obr2_1: obr2Parts[0] || '', // OBR-2.1 Placer Order Number (entity id)
+            obr3_1: obr3Parts[0] || '', // OBR-3.1 Filler Order Number (entity id)
             obr4_code: field(parts, 4).split('^')[0],
             obr4_text: field(parts, 4).split('^')[1] || '',
             obr7: field(parts, 6), // Observation Date/Time
