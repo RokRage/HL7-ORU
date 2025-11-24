@@ -41,7 +41,11 @@ for (var i = 0; i < lines.length; i++) {
             obxs: []
         };
         result.obrs.push(currentObr);
-    } else if (seg === 'OBX' && currentObr) {
+    } else if (seg === 'OBX') {
+        // Ensure we have an active OBR; if not, skip this OBX.
+        if (!currentObr) {
+            continue;
+        }
         var obx3 = field(parts, 3).split('^');
         currentObr.obxs.push({
             obx3_code: obx3[0] || '',
@@ -56,4 +60,5 @@ for (var i = 0; i < lines.length; i++) {
 
 logger.info(JSON.stringify(result));
 
-return true; // Let the connector continue processing
+// needed this line to attach to template
+tmp = JsonUtil.prettyPrint(JSON.stringify(result));
