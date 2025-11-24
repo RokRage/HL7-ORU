@@ -1,9 +1,6 @@
 # Context
 
-## ORU^R01 Grouping (HL7 v2)
-- Message has one patient group (PID with optional PD1/NK1) and optional visit (PV1/PV2).
-- Orders live under patient: each order/observation group is ORC (often present) followed by one or more OBR segments, each with its own OBX children.
-- OBX segments belong to their parent OBR and stay in order; NTE may follow OBR or each OBX.
-- SAC/SPM specimen segments can appear between ORC and OBR depending on profile.
-- Grouping order: MSH … PID … [PV1] then repeating ORC groups → ORC [SAC/SPM] then repeating OBR → OBR [NTE] then repeating OBX → OBX [NTE].
-- In this project we expect a single ORC per message with multiple OBRs and OBXs beneath it; if multiple ORCs appear, iterate ORDER_OBSERVATION groups separately.
+## Files (tracked)
+- `HL7_ORU_ExtractOBRGroups_OutJSON.js`: Parses raw HL7 line-by-line (ORC → OBR → OBX), captures patient demographics (PID-3, PID-5, PID-7, PID-8), ORC (ORC-2, ORC-3), OBR (OBR-2.1, OBR-3.1, OBR-4, OBR-7), and related OBXs, builds JSON, logs it, and assigns a pretty-printed JSON to `tmp`.
+- `SimpleMirthJSONOutput.js`: Minimal transformer snippet using `XmlUtil.toJson(msg)`; intended for channels configured with JSON outbound datatype and template.
+
