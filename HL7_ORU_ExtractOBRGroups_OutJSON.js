@@ -14,7 +14,15 @@ var raw = connectorMessage.getRawData ? String(connectorMessage.getRawData()) :
           (connectorMessage.getEncodedData ? String(connectorMessage.getEncodedData()) : String(msg));
 var lines = raw.split(/\r\n|\n|\r/);
 
-var result = { orc2: '', orc3: '', obrs: [] };
+var result = {
+    patientId: '',
+    patientName: '',
+    sex: '',
+    dob: '',
+    orc2: '',
+    orc3: '',
+    obrs: []
+};
 var currentObr = null;
 
 for (var i = 0; i < lines.length; i++) {
@@ -26,7 +34,16 @@ for (var i = 0; i < lines.length; i++) {
     var parts = trimmed.split('|');
     var seg = parts[0];
 
-    if (seg === 'ORC') {
+    if (seg === 'PID') {
+        var pid3 = field(parts, 3).split('^'); // Patient ID list
+        var pid5 = field(parts, 5).split('^'); // Patient Name components
+        result.patientId = pid3[0] || '';
+        var last = pid5[0] || '';
+        var first = pid5[1] || '';
+        result.patientName = (first && last) ? first + ' ' + last : (first || last);
+        result.sex = field(parts, 8); // PID-8 Administrative Sex
+        result.dob = field(parts, 7); // PID-7 Date/Time of Birth
+    } else if (seg === 'ORC') {
         result.orc2 = field(parts, 2); // ORC-2 Placer Order Number (per feed assumption)
         result.orc3 = field(parts, 3); // ORC-3 Filler Order Number
     } else if (seg === 'OBR') {
