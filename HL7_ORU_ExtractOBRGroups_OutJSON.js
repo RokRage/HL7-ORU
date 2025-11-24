@@ -19,10 +19,11 @@ var currentObr = null;
 
 for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
-    if (!line || line.trim() === '') {
+    var trimmed = line ? line.trim() : '';
+    if (!trimmed) {
         continue;
     }
-    var parts = line.split('|');
+    var parts = trimmed.split('|');
     var seg = parts[0];
 
     if (seg === 'ORC') {
