@@ -12,18 +12,13 @@ function asString(field) {
 }
 
 // Aggregate output as JSON: single ORC with child OBRs and their OBXs.
-var orders = msg['ORDER_OBSERVATION'];
-if (orders == null) {
-    orders = new XMLList(); // keeps length() calls safe when no ORDER_OBSERVATION exists
+// Use descendant lookup for OBR; take its parent’s OBX nodes to keep grouping intact.
+var obrs = msg..OBR;
+if (obrs == null || obrs.length() === 0) {
+    obrs = new XMLList(); // keeps length() calls safe when no OBR exists
 }
-var orcSegment = null;
-
-// Prefer ORC inside the first order group; fallback to a top-level ORC if present.
-if (orders.length() > 0 && orders[0]['ORC']) {
-    orcSegment = orders[0]['ORC'];
-} else if (msg['ORC']) {
-    orcSegment = msg['ORC'];
-}
+// There is always one ORC; prefer the top-level ORC, fallback to the ORC in the first OBR's parent group.
+var orcSegment = (msg.ORC && msg.ORC.length() > 0) ? msg.ORC[0] : (obrs.length() > 0 && obrs[0].parent() && obrs[0].parent().ORC ? obrs[0].parent().ORC[0] : null);
 
 var result = {
     orc2: asString(orcSegment ? orcSegment['ORC.2']['EI.1'] : ''),
@@ -31,10 +26,11 @@ var result = {
     obrs: []
 };
 
-for (var i = 0; i < orders.length(); i++) {
-    var group = orders[i];
-    var obr = group['OBR'];
-    var obxes = group.getAll('OBX'); // preserves message order
+for (var i = 0; i < obrs.length(); i++) {
+    var obr = obrs[i];
+    // Get OBX nodes that share the same parent as this OBR (usual HL7 grouping).
+    var parent = obr.parent();
+    var obxes = (parent && parent.OBX) ? parent.OBX : new XMLList();
 
     var obrEntry = {
         obr4_code: asString(obr['OBR.4']['CE.1']),
