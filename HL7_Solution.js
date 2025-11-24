@@ -14,61 +14,57 @@ var db = DatabaseConnectionFactory.createDatabaseConnection(
     'dbpass'                                         // password
 );
 
-/**
- * Safely returns a field value as a string, falling back to '' when missing.
- */
-function asString(field) {
-    return (field && field.toString) ? field.toString() : '';
+// Helper: safe field accessor on a pipe-split segment (0-based index).
+function field(parts, idx) {
+    return (parts && parts.length > idx) ? String(parts[idx]) : '';
 }
 
 try {
-    // The HL7 message is XML in "msg". Each ORDER_OBSERVATION corresponds to one ORC/OBR with its OBX children.
-    var orders = msg['ORDER_OBSERVATION'];
+    // Work from the raw HL7 so grouping matches wire order.
+    var raw = connectorMessage.getRawData ? String(connectorMessage.getRawData()) :
+              (connectorMessage.getEncodedData ? String(connectorMessage.getEncodedData()) : String(msg));
+    var lines = raw.split(/\\r\\n|\\n|\\r/);
 
-    for (var i = 0; i < orders.length(); i++) {
-        var group = orders[i];
-        var orc = group['ORC'];
-        var obr = group['OBR'];
-        var obxes = group.getAll('OBX'); // preserves message order
+    var result = { orc2: '', orc3: '', obrs: [] };
+    var currentObr = null;
 
-        // Pull ORC/OBR fields once per group
-        var orcId    = asString(orc['ORC.2']['EI.1']);  // Filler Order Number
-        var placerId = asString(orc['ORC.3']['EI.1']);  // Placer Order Number
-        var obrCode  = asString(obr['OBR.4']['CE.1']);  // Observation ID code
-        var obrText  = asString(obr['OBR.4']['CE.2']);  // Observation ID text
-        var obsDt    = asString(obr['OBR.7']['TS.1']);  // Observation date/time
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line || line.trim() === '') {
+            continue;
+        }
+        var parts = line.split('|');
+        var seg = parts[0];
 
-        // Loop each OBX tied to this ORC/OBR
-        for (var j = 0; j < obxes.length(); j++) {
-            var obx = obxes[j];
-            var obxCode  = asString(obx['OBX.3']['CE.1']);
-            var obxText  = asString(obx['OBX.3']['CE.2']);
-            var value    = asString(obx['OBX.5'][0]);      // first repetition of value
-            var units    = asString(obx['OBX.6']['CE.1']);
-            var status   = asString(obx['OBX.11']);        // Observation result status
-            var valueDt  = asString(obx['OBX.14']['TS.1']); // Date/time of the observation
-
-            // Call your stored procedure instead of direct INSERT; adjust name/params as needed.
-            var sql = "{ call usp_save_lab_result(?,?,?,?,?,?,?,?,?,?,?) }";
-
-            db.executeUpdate(
-                sql,
-                [
-                    orcId,
-                    placerId,
-                    obrCode,
-                    obrText,
-                    obsDt,
-                    obxCode,
-                    obxText,
-                    value,
-                    units,
-                    status,
-                    valueDt
-                ]
-            );
+        if (seg === 'ORC') {
+            result.orc2 = field(parts, 2); // ORC-2 Placer Order Number (per feed assumption)
+            result.orc3 = field(parts, 3); // ORC-3 Filler Order Number
+        } else if (seg === 'OBR') {
+            currentObr = {
+                obr4_code: field(parts, 4).split('^')[0],
+                obr4_text: field(parts, 4).split('^')[1] || '',
+                obr7: field(parts, 6), // Observation Date/Time
+                obxs: []
+            };
+            result.obrs.push(currentObr);
+        } else if (seg === 'OBX' && currentObr) {
+            var obx3 = field(parts, 3).split('^');
+            currentObr.obxs.push({
+                obx3_code: obx3[0] || '',
+                obx3_text: obx3[1] || '',
+                obx5: field(parts, 5),
+                obx6: field(parts, 6),
+                obx11: field(parts, 11),
+                obx14: field(parts, 14)
+            });
         }
     }
+
+    var payload = JSON.stringify(result);
+
+    // Write the JSON as a single text block to a table; adjust table/column as needed.
+    var sql = "INSERT INTO lab_result_json (payload) VALUES (?)";
+    db.executeUpdate(sql, [payload]);
 } finally {
     db.close();
 }
