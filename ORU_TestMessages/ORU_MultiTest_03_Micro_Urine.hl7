@@ -1,0 +1,12 @@
+MSH|^~\&|MICROLAB|LAB3|EPR|HOSP|20260428103000||ORU^R01|MSG00003|P|2.5.1
+PID|1||900000003^^^NHS^NH||BROWN^EMMA||19920528|F
+PV1|1|I|WARD3^12^B
+OBR|1|ORD3001|FILL3001|630-4^Bacteria identified in Urine by Culture^LN|||20260428090000
+OBX|1|CE|630-4^Culture Result^LN||260373001^Escherichia coli^SCT|||A|||F
+NTE|1||>100,000 CFU/mL.
+OBX|2|ST|18906-8^Comment^LN||Sensitive to nitrofurantoin.|||N|||F
+OBR|2|ORD3002|FILL3002|24357-6^Urinalysis complete^LN|||20260428090000
+OBX|1|ST|5778-6^Appearance^LN||Cloudy|||A|||F
+OBX|2|NM|5804-0^Specific gravity^LN||1.021||1.005-1.030|N|||F
+OBX|3|ST|5811-5^pH^LN||6.0|||N|||F
+OBX|4|NM|20454-5^Leukocytes^LN||75|/uL|0-10|H|||F

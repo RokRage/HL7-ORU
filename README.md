@@ -11,6 +11,8 @@ It includes examples for HL7 parsing, JSON transformation, and message filtering
   Minimal `XmlUtil.toJson(msg)` example for JSON outbound channels.
 - `Mirth Connect - Filter - Exclude or Include based on small set of NHS number.js`  
   Example filter logic for allow/deny decisions from a small NHS number set.
+- `Mirth Connect - ORU - Split Multiple Tests into Single ORU Messages.js`  
+  Splits one inbound ORU with multiple test groups into one single-test ORU message per `OBR`.
 
 ## How To Use
 1. Open your Mirth channel and paste a snippet into the appropriate JavaScript step (Filter/Transformer/Writer).
