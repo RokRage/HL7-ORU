@@ -19,8 +19,3 @@ temp/
 # Local env files
 .env
 .env.*
-
-# Local planning/agent notes
-PLAN.MD
-PLAND.md
-AGENTS.MD
