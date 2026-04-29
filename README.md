@@ -23,9 +23,3 @@ It includes examples for HL7 parsing, JSON transformation, and message filtering
 - Snippets are intended as starting points, not drop-in production code.
 - Update segment/field indices and guard clauses to match your feed variations.
 - Keep environment-specific constants (IDs, endpoints, allowlists) external where possible.
-
-## API Bootstrap
-- Generic create/deploy script: `scripts/create_mirth_interface_via_api.sh`
-- ORU wrapper script: `scripts/create_oru_split_interface_via_api.sh`
-- Reusable runbook: `docs/MIRTH_CONNECT_PROJECT_BOOTSTRAP.md`
-- Destination routing is defined by your chosen template; scripts do not require split-route designs.
